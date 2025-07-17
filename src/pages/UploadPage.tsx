@@ -1,9 +1,9 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Upload, Video, User, BookOpen, Loader2 } from 'lucide-react'
 import { blink } from '../blink/client'
 
 interface UploadPageProps {
-  onVideoAnalyzed: (videoId: string) => void
+  onVideoAnalyzed: (videoId: string, referenceVideoId?: string) => void
 }
 
 export function UploadPage({ onVideoAnalyzed }: UploadPageProps) {
@@ -15,7 +15,27 @@ export function UploadPage({ onVideoAnalyzed }: UploadPageProps) {
   const [studentName, setStudentName] = useState('')
   const [danceStyle, setDanceStyle] = useState('')
   const [notes, setNotes] = useState('')
+  const [referenceVideoId, setReferenceVideoId] = useState('')
+  const [teacherVideos, setTeacherVideos] = useState<any[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    loadTeacherVideos()
+  }, [])
+
+  const loadTeacherVideos = async () => {
+    try {
+      const user = await blink.auth.me()
+      const storedVideos = localStorage.getItem(`video_analyses_${user.id}`)
+      const videos = storedVideos ? JSON.parse(storedVideos) : []
+      
+      // Filter for teacher videos only
+      const teachers = videos.filter((v: any) => v.videoType === 'teacher' && v.status === 'completed')
+      setTeacherVideos(teachers)
+    } catch (error) {
+      console.error('Failed to load teacher videos:', error)
+    }
+  }
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault()
@@ -81,6 +101,7 @@ export function UploadPage({ onVideoAnalyzed }: UploadPageProps) {
         studentName: videoType === 'student' ? studentName : null,
         danceStyle,
         notes,
+        referenceVideoId: videoType === 'student' ? referenceVideoId : null,
         status: 'analyzing',
         createdAt: new Date().toISOString()
       }
@@ -135,7 +156,7 @@ export function UploadPage({ onVideoAnalyzed }: UploadPageProps) {
         localStorage.setItem(`video_analyses_${user.id}`, JSON.stringify(videos))
       }
 
-      onVideoAnalyzed(videoRecord.id)
+      onVideoAnalyzed(videoRecord.id, referenceVideoId || undefined)
     } catch (error) {
       console.error('Analysis failed:', error)
       alert('Analysis failed. Please try again.')
@@ -252,6 +273,13 @@ export function UploadPage({ onVideoAnalyzed }: UploadPageProps) {
               className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
             >
               <option value="">Select style</option>
+              <option value="bharatanatyam">Bharatanatyam</option>
+              <option value="kathak">Kathak</option>
+              <option value="odissi">Odissi</option>
+              <option value="kuchipudi">Kuchipudi</option>
+              <option value="manipuri">Manipuri</option>
+              <option value="mohiniyattam">Mohiniyattam</option>
+              <option value="kathakali">Kathakali</option>
               <option value="ballet">Ballet</option>
               <option value="jazz">Jazz</option>
               <option value="contemporary">Contemporary</option>
@@ -263,6 +291,32 @@ export function UploadPage({ onVideoAnalyzed }: UploadPageProps) {
             </select>
           </div>
         </div>
+
+        {/* Reference Video Selection for Student Videos */}
+        {videoType === 'student' && teacherVideos.length > 0 && (
+          <div className="mt-4">
+            <label className="block text-sm font-medium text-foreground mb-2">
+              Compare with Teacher Video (Optional)
+            </label>
+            <select
+              value={referenceVideoId}
+              onChange={(e) => setReferenceVideoId(e.target.value)}
+              className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+            >
+              <option value="">Select teacher video for comparison</option>
+              {teacherVideos
+                .filter(video => !danceStyle || video.danceStyle === danceStyle)
+                .map((video) => (
+                  <option key={video.id} value={video.id}>
+                    {video.title} - {video.danceStyle} ({video.overallScore}%)
+                  </option>
+                ))}
+            </select>
+            <p className="text-xs text-muted-foreground mt-1">
+              Select a teacher demonstration to compare student performance and get detailed improvement suggestions
+            </p>
+          </div>
+        )}
         
         <div className="mt-4">
           <label className="block text-sm font-medium text-foreground mb-2">

@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react'
-import { Play, Download, ArrowLeft, User, BookOpen, Clock, Award } from 'lucide-react'
+import { Play, Download, ArrowLeft, User, BookOpen, Clock, Award, GitCompare } from 'lucide-react'
 import { blink } from '../blink/client'
 
 interface AnalysisPageProps {
   videoId: string
+  onCompareVideos?: (studentVideoId: string, teacherVideoId: string) => void
 }
 
 interface VideoData {
@@ -25,10 +26,12 @@ interface VideoData {
   analyzedAt: string
 }
 
-export function AnalysisPage({ videoId }: AnalysisPageProps) {
+export function AnalysisPage({ videoId, onCompareVideos }: AnalysisPageProps) {
   const [video, setVideo] = useState<VideoData | null>(null)
   const [feedback, setFeedback] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [teacherVideos, setTeacherVideos] = useState<any[]>([])
+  const [showCompareModal, setShowCompareModal] = useState(false)
 
   useEffect(() => {
     loadVideoAnalysis()
@@ -53,6 +56,16 @@ export function AnalysisPage({ videoId }: AnalysisPageProps) {
           } catch (e) {
             console.error('Failed to parse feedback:', e)
           }
+        }
+
+        // Load teacher videos for comparison if this is a student video
+        if (video.videoType === 'student') {
+          const teachers = videos.filter((v: any) => 
+            v.videoType === 'teacher' && 
+            v.status === 'completed' &&
+            v.danceStyle === video.danceStyle
+          )
+          setTeacherVideos(teachers)
         }
       }
     } catch (error) {
@@ -181,6 +194,15 @@ export function AnalysisPage({ videoId }: AnalysisPageProps) {
               <button className="w-full bg-muted text-foreground px-4 py-2 rounded-lg hover:bg-muted/80 transition-colors">
                 Share Feedback
               </button>
+              {video?.videoType === 'student' && teacherVideos.length > 0 && (
+                <button 
+                  onClick={() => setShowCompareModal(true)}
+                  className="w-full bg-accent text-accent-foreground px-4 py-2 rounded-lg hover:bg-accent/90 transition-colors flex items-center justify-center space-x-2"
+                >
+                  <GitCompare className="w-4 h-4" />
+                  <span>Compare with Teacher</span>
+                </button>
+              )}
               <button className="w-full bg-muted text-foreground px-4 py-2 rounded-lg hover:bg-muted/80 transition-colors">
                 Compare Progress
               </button>
@@ -325,6 +347,48 @@ export function AnalysisPage({ videoId }: AnalysisPageProps) {
         <div className="feedback-card">
           <h3 className="text-lg font-semibold text-foreground mb-4">Additional Notes</h3>
           <p className="text-foreground">{video.notes}</p>
+        </div>
+      )}
+
+      {/* Compare Modal */}
+      {showCompareModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-background rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-semibold text-foreground mb-4">Select Teacher Video</h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              Choose a teacher demonstration to compare with this student performance
+            </p>
+            <div className="space-y-2 max-h-60 overflow-y-auto">
+              {teacherVideos.map((teacherVideo) => (
+                <button
+                  key={teacherVideo.id}
+                  onClick={() => {
+                    if (onCompareVideos && video) {
+                      onCompareVideos(video.id, teacherVideo.id)
+                    }
+                    setShowCompareModal(false)
+                  }}
+                  className="w-full text-left p-3 bg-muted hover:bg-muted/80 rounded-lg transition-colors"
+                >
+                  <div className="font-medium text-foreground">{teacherVideo.title}</div>
+                  <div className="text-sm text-muted-foreground">
+                    {teacherVideo.danceStyle} • Score: {teacherVideo.overallScore}%
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {new Date(teacherVideo.createdAt).toLocaleDateString()}
+                  </div>
+                </button>
+              ))}
+            </div>
+            <div className="flex justify-end space-x-2 mt-4">
+              <button
+                onClick={() => setShowCompareModal(false)}
+                className="px-4 py-2 text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

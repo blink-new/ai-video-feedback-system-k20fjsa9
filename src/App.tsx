@@ -4,17 +4,19 @@ import { DashboardPage } from './pages/DashboardPage'
 import { UploadPage } from './pages/UploadPage'
 import { AnalysisPage } from './pages/AnalysisPage'
 import { HistoryPage } from './pages/HistoryPage'
+import { ComparisonPage } from './pages/ComparisonPage'
 import { Sidebar } from './components/layout/Sidebar'
 import { Header } from './components/layout/Header'
 import { LoadingScreen } from './components/ui/LoadingScreen'
 
-export type PageType = 'dashboard' | 'upload' | 'analysis' | 'history'
+export type PageType = 'dashboard' | 'upload' | 'analysis' | 'history' | 'comparison'
 
 function App() {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
   const [currentPage, setCurrentPage] = useState<PageType>('dashboard')
   const [selectedVideoId, setSelectedVideoId] = useState<string | null>(null)
+  const [referenceVideoId, setReferenceVideoId] = useState<string | null>(null)
 
   useEffect(() => {
     const unsubscribe = blink.auth.onAuthStateChanged((state) => {
@@ -24,9 +26,22 @@ function App() {
     return unsubscribe
   }, [])
 
-  const handleVideoAnalyzed = (videoId: string) => {
+  const handleVideoAnalyzed = (videoId: string, refVideoId?: string) => {
     setSelectedVideoId(videoId)
-    setCurrentPage('analysis')
+    setReferenceVideoId(refVideoId || null)
+    
+    // If there's a reference video, go to comparison page, otherwise analysis page
+    if (refVideoId) {
+      setCurrentPage('comparison')
+    } else {
+      setCurrentPage('analysis')
+    }
+  }
+
+  const handleCompareVideos = (studentVideoId: string, teacherVideoId: string) => {
+    setSelectedVideoId(studentVideoId)
+    setReferenceVideoId(teacherVideoId)
+    setCurrentPage('comparison')
   }
 
   if (loading) {
@@ -74,13 +89,22 @@ function App() {
             <UploadPage onVideoAnalyzed={handleVideoAnalyzed} />
           )}
           {currentPage === 'analysis' && selectedVideoId && (
-            <AnalysisPage videoId={selectedVideoId} />
+            <AnalysisPage 
+              videoId={selectedVideoId} 
+              onCompareVideos={handleCompareVideos}
+            />
           )}
           {currentPage === 'history' && (
             <HistoryPage onVideoSelect={(id) => {
               setSelectedVideoId(id)
               setCurrentPage('analysis')
             }} />
+          )}
+          {currentPage === 'comparison' && selectedVideoId && referenceVideoId && (
+            <ComparisonPage 
+              studentVideoId={selectedVideoId} 
+              teacherVideoId={referenceVideoId} 
+            />
           )}
         </main>
       </div>
