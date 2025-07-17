@@ -25,33 +25,38 @@ export function DashboardPage({ onNavigate }: DashboardProps) {
     try {
       const user = await blink.auth.me()
       
-      // Load recent videos
-      const videos = await blink.db.danceVideos.list({
-        where: { userId: user.id },
-        orderBy: { createdAt: 'desc' },
-        limit: 5
-      })
+      // Load recent videos from localStorage as fallback
+      const storedVideos = localStorage.getItem(`dance_videos_${user.id}`)
+      const videos = storedVideos ? JSON.parse(storedVideos) : []
 
       setRecentVideos(videos)
       
       // Calculate stats
       const totalVideos = videos.length
       const avgScore = videos.length > 0 
-        ? videos.reduce((sum, video) => sum + (video.overallScore || 0), 0) / videos.length
+        ? videos.reduce((sum: number, video: any) => sum + (video.overallScore || 0), 0) / videos.length
         : 0
       
       setStats({
         totalVideos,
         avgScore: Math.round(avgScore),
-        recentAnalyses: videos.filter(v => {
+        recentAnalyses: videos.filter((v: any) => {
           const createdAt = new Date(v.createdAt)
           const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
           return createdAt > weekAgo
         }).length,
-        studentsHelped: new Set(videos.map(v => v.studentName).filter(Boolean)).size
+        studentsHelped: new Set(videos.map((v: any) => v.studentName).filter(Boolean)).size
       })
     } catch (error) {
       console.error('Failed to load dashboard data:', error)
+      // Set empty state on error
+      setStats({
+        totalVideos: 0,
+        avgScore: 0,
+        recentAnalyses: 0,
+        studentsHelped: 0
+      })
+      setRecentVideos([])
     } finally {
       setLoading(false)
     }

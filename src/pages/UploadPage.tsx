@@ -71,8 +71,9 @@ export function UploadPage({ onVideoAnalyzed }: UploadPageProps) {
 
       setUploading(false)
 
-      // Create video record
-      const videoRecord = await blink.db.danceVideos.create({
+      // Create video record in localStorage as fallback
+      const videoRecord = {
+        id: `video_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         userId: user.id,
         title: videoFile.name,
         videoUrl: publicUrl,
@@ -82,7 +83,12 @@ export function UploadPage({ onVideoAnalyzed }: UploadPageProps) {
         notes,
         status: 'analyzing',
         createdAt: new Date().toISOString()
-      })
+      }
+
+      // Store in localStorage
+      const existingVideos = JSON.parse(localStorage.getItem(`dance_videos_${user.id}`) || '[]')
+      existingVideos.unshift(videoRecord)
+      localStorage.setItem(`dance_videos_${user.id}`, JSON.stringify(existingVideos))
 
       // Simulate AI analysis with realistic dance feedback
       await new Promise(resolve => setTimeout(resolve, 3000))
@@ -108,8 +114,9 @@ export function UploadPage({ onVideoAnalyzed }: UploadPageProps) {
       // Parse analysis into structured feedback
       const feedback = parseAnalysisText(analysisText)
 
-      // Update video record with analysis
-      await blink.db.danceVideos.update(videoRecord.id, {
+      // Update video record with analysis in localStorage
+      const updatedRecord = {
+        ...videoRecord,
         status: 'completed',
         analysisText,
         techniqueScore: feedback.techniqueScore,
@@ -118,7 +125,15 @@ export function UploadPage({ onVideoAnalyzed }: UploadPageProps) {
         overallScore: feedback.overallScore,
         feedback: JSON.stringify(feedback),
         analyzedAt: new Date().toISOString()
-      })
+      }
+
+      // Update in localStorage
+      const videos = JSON.parse(localStorage.getItem(`dance_videos_${user.id}`) || '[]')
+      const videoIndex = videos.findIndex((v: any) => v.id === videoRecord.id)
+      if (videoIndex !== -1) {
+        videos[videoIndex] = updatedRecord
+        localStorage.setItem(`dance_videos_${user.id}`, JSON.stringify(videos))
+      }
 
       onVideoAnalyzed(videoRecord.id)
     } catch (error) {

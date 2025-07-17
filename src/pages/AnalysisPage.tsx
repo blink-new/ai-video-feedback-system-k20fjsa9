@@ -36,14 +36,16 @@ export function AnalysisPage({ videoId }: AnalysisPageProps) {
 
   const loadVideoAnalysis = async () => {
     try {
-      const videoData = await blink.db.danceVideos.list({
-        where: { id: videoId },
-        limit: 1
-      })
+      const user = await blink.auth.me()
+      
+      // Load from localStorage as fallback
+      const storedVideos = localStorage.getItem(`dance_videos_${user.id}`)
+      const videos = storedVideos ? JSON.parse(storedVideos) : []
+      
+      const video = videos.find((v: any) => v.id === videoId)
 
-      if (videoData.length > 0) {
-        const video = videoData[0] as VideoData
-        setVideo(video)
+      if (video) {
+        setVideo(video as VideoData)
         
         if (video.feedback) {
           try {

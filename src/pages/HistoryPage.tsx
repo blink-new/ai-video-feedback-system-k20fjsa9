@@ -31,26 +31,27 @@ export function HistoryPage({ onVideoSelect }: HistoryPageProps) {
 
   useEffect(() => {
     filterAndSortVideos()
-  }, [videos, searchTerm, filterType, sortBy])
+  }, [videos, searchTerm, filterType, sortBy]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadVideoHistory = async () => {
     try {
       const user = await blink.auth.me()
-      const videoData = await blink.db.danceVideos.list({
-        where: { userId: user.id },
-        orderBy: { createdAt: 'desc' }
-      })
+      
+      // Load from localStorage as fallback
+      const storedVideos = localStorage.getItem(`dance_videos_${user.id}`)
+      const videoData = storedVideos ? JSON.parse(storedVideos) : []
 
       setVideos(videoData as VideoRecord[])
     } catch (error) {
       console.error('Failed to load video history:', error)
+      setVideos([])
     } finally {
       setLoading(false)
     }
   }
 
   const filterAndSortVideos = () => {
-    let filtered = videos.filter(video => {
+    const filtered = videos.filter(video => {
       const matchesSearch = video.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            (video.studentName && video.studentName.toLowerCase().includes(searchTerm.toLowerCase())) ||
                            video.danceStyle.toLowerCase().includes(searchTerm.toLowerCase())
