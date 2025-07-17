@@ -86,9 +86,9 @@ export function UploadPage({ onVideoAnalyzed }: UploadPageProps) {
       }
 
       // Store in localStorage
-      const existingVideos = JSON.parse(localStorage.getItem(`dance_videos_${user.id}`) || '[]')
+      const existingVideos = JSON.parse(localStorage.getItem(`video_analyses_${user.id}`) || '[]')
       existingVideos.unshift(videoRecord)
-      localStorage.setItem(`dance_videos_${user.id}`, JSON.stringify(existingVideos))
+      localStorage.setItem(`video_analyses_${user.id}`, JSON.stringify(existingVideos))
 
       // Simulate AI analysis with realistic dance feedback
       await new Promise(resolve => setTimeout(resolve, 3000))
@@ -128,11 +128,11 @@ export function UploadPage({ onVideoAnalyzed }: UploadPageProps) {
       }
 
       // Update in localStorage
-      const videos = JSON.parse(localStorage.getItem(`dance_videos_${user.id}`) || '[]')
+      const videos = JSON.parse(localStorage.getItem(`video_analyses_${user.id}`) || '[]')
       const videoIndex = videos.findIndex((v: any) => v.id === videoRecord.id)
       if (videoIndex !== -1) {
         videos[videoIndex] = updatedRecord
-        localStorage.setItem(`dance_videos_${user.id}`, JSON.stringify(videos))
+        localStorage.setItem(`video_analyses_${user.id}`, JSON.stringify(videos))
       }
 
       onVideoAnalyzed(videoRecord.id)

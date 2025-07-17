@@ -37,8 +37,8 @@ export function HistoryPage({ onVideoSelect }: HistoryPageProps) {
     try {
       const user = await blink.auth.me()
       
-      // Load from localStorage as fallback
-      const storedVideos = localStorage.getItem(`dance_videos_${user.id}`)
+      // Load from localStorage
+      const storedVideos = localStorage.getItem(`video_analyses_${user.id}`)
       const videoData = storedVideos ? JSON.parse(storedVideos) : []
 
       setVideos(videoData as VideoRecord[])

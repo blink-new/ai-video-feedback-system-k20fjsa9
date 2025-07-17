@@ -38,8 +38,8 @@ export function AnalysisPage({ videoId }: AnalysisPageProps) {
     try {
       const user = await blink.auth.me()
       
-      // Load from localStorage as fallback
-      const storedVideos = localStorage.getItem(`dance_videos_${user.id}`)
+      // Load from localStorage
+      const storedVideos = localStorage.getItem(`video_analyses_${user.id}`)
       const videos = storedVideos ? JSON.parse(storedVideos) : []
       
       const video = videos.find((v: any) => v.id === videoId)
